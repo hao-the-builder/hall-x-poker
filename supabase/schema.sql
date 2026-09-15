@@ -484,7 +484,7 @@ returns void
 language plpgsql
 security definer
 set search_path = public
-as $
+as $$
 declare
   uid uuid := public.assert_member();
   tr public.tournaments%rowtype;
@@ -499,14 +499,14 @@ begin
   end if;
   update public.tournaments set dealer_id = uid where id = p_id;
 end;
-$;
+$$;
 
 create or replace function public.leave_dealer_seat(p_id uuid)
 returns void
 language plpgsql
 security definer
 set search_path = public
-as $
+as $$
 declare
   uid uuid := public.assert_member();
   tr public.tournaments%rowtype;
@@ -516,14 +516,14 @@ begin
   if tr.status <> 'open' then raise exception 'Results are already in; the dealer is locked.'; end if;
   update public.tournaments set dealer_id = null where id = p_id and dealer_id = uid;
 end;
-$;
+$$;
 
 create or replace function public.remove_dealer(p_id uuid)
 returns void
 language plpgsql
 security definer
 set search_path = public
-as $
+as $$
 declare
   uid uuid := public.assert_member();
   tr public.tournaments%rowtype;
@@ -534,7 +534,7 @@ begin
   if tr.status <> 'open' then raise exception 'Results are already in. Reopen the tournament to change the dealer.'; end if;
   update public.tournaments set dealer_id = null where id = p_id;
 end;
-$;
+$$;
 
 -- Lock the functions down to signed-in members.
 revoke all on function public.assert_member() from public, anon;
