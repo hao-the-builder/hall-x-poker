@@ -162,12 +162,19 @@ function tournamentFields(fd: FormData) {
   const name = str(fd, "name");
   const when = str(fd, "scheduled_at");
   const maxPlayers = Number(str(fd, "max_players") || "9");
-  const hostPlays = fd.get("host_plays") === "on";
-  return { name, when, maxPlayers, hostPlays, fields: { name, scheduled_at: when, max_players: String(maxPlayers) } };
+  const role = str(fd, "host_role");
+  const hostRole = role === "dealer" || role === "none" ? role : "player";
+  return {
+    name,
+    when,
+    maxPlayers,
+    hostRole,
+    fields: { name, scheduled_at: when, max_players: String(maxPlayers), host_role: hostRole },
+  };
 }
 
 export async function createTournament(_prev: ActionState, fd: FormData): Promise<ActionState> {
-  const { name, when, maxPlayers, hostPlays, fields } = tournamentFields(fd);
+  const { name, when, maxPlayers, hostRole, fields } = tournamentFields(fd);
   if (isDemo()) return { error: DEMO_ERROR, fields };
   if (name.length < 2 || name.length > 60) return { error: "Give the tournament a name (2 to 60 characters).", fields };
   if (!Number.isInteger(maxPlayers) || maxPlayers < 2 || maxPlayers > 9) {
@@ -178,7 +185,7 @@ export async function createTournament(_prev: ActionState, fd: FormData): Promis
     p_name: name,
     p_scheduled_at: fromLocalInput(when),
     p_max_players: maxPlayers,
-    p_host_plays: hostPlays,
+    p_host_role: hostRole,
   });
   if (error) return { error: humanize(error.message), fields };
   revalidatePath("/tournaments");
@@ -220,6 +227,18 @@ export async function joinTournament(id: string): Promise<ActionState> {
 
 export async function leaveTournament(id: string): Promise<ActionState> {
   return simpleRpc("leave_tournament", { p_id: id }, ["/tournaments", `/tournaments/${id}`]);
+}
+
+export async function takeDealerSeat(id: string): Promise<ActionState> {
+  return simpleRpc("take_dealer_seat", { p_id: id }, ["/tournaments", `/tournaments/${id}`]);
+}
+
+export async function leaveDealerSeat(id: string): Promise<ActionState> {
+  return simpleRpc("leave_dealer_seat", { p_id: id }, ["/tournaments", `/tournaments/${id}`]);
+}
+
+export async function removeDealer(id: string): Promise<ActionState> {
+  return simpleRpc("remove_dealer", { p_id: id }, ["/tournaments", `/tournaments/${id}`]);
 }
 
 export async function removePlayer(id: string, userId: string): Promise<ActionState> {

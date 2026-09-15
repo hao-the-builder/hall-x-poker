@@ -71,18 +71,27 @@ export function TournamentForm(props: Props) {
           <p className="field__hint">
             {props.mode === "edit" && props.initial.seated > 2
               ? `${props.initial.seated} already seated, so the table can't be smaller than that.`
-              : "Maximum 9. First place scores 9 points whatever the field size."}
+              : "Maximum 9, plus one dealer. First place scores 9 points whatever the field size."}
           </p>
         </div>
       </div>
 
       {props.mode === "create" && (
-        <label className="checkbox">
-          <input type="checkbox" name="host_plays" defaultChecked />
-          <span>
-            I&rsquo;m playing too. <span className="muted">Take the first seat for me.</span>
-          </span>
-        </label>
+        <fieldset className="choice">
+          <legend className="field__label">Your seat</legend>
+          {[
+            { value: "player", label: "Playing", hint: "Take the first player seat." },
+            { value: "dealer", label: "Dealing", hint: "Take the dealer seat. Dealers aren’t ranked." },
+            { value: "none", label: "Just hosting", hint: "Leave every seat open." },
+          ].map((o) => (
+            <label key={o.value} className="checkbox">
+              <input type="radio" name="host_role" value={o.value} defaultChecked={(f?.host_role ?? "player") === o.value} />
+              <span>
+                {o.label} <span className="muted">{o.hint}</span>
+              </span>
+            </label>
+          ))}
+        </fieldset>
       )}
 
       <div className="form-actions">

@@ -13,3 +13,5 @@ export function siteUrl(): string {
 export function isUstEmail(email: string): boolean {
   return EMAIL_RE.test(email.trim());
 }
+
+export const ASSOCIATION_NAME = "Hall X Student Poker Association";

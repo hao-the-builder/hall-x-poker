@@ -125,6 +125,11 @@ create table if not exists public.tournament_players (
 );
 
 create index if not exists tournament_players_user_idx on public.tournament_players (user_id);
+
+-- One dealer per table. The dealer does not play, is not ranked, and does not
+-- take one of the (up to 9) player seats.
+alter table public.tournaments
+  add column if not exists dealer_id uuid references public.profiles (id) on delete set null;
 create index if not exists tournaments_status_idx on public.tournaments (status, scheduled_at desc);
 
 -- ----------------------------------------------------------------------------
@@ -238,11 +243,14 @@ begin
 end;
 $$;
 
+drop function if exists public.create_tournament(text, timestamptz, integer, boolean);
+
+-- p_host_role: 'player' (take the first seat), 'dealer' (take the dealer seat), or 'none'.
 create or replace function public.create_tournament(
   p_name text,
   p_scheduled_at timestamptz,
   p_max_players integer,
-  p_host_plays boolean default true
+  p_host_role text default 'player'
 )
 returns uuid
 language plpgsql
@@ -263,8 +271,10 @@ begin
   values (left(trim(p_name), 60), uid, coalesce(p_scheduled_at, now()), p_max_players)
   returning id into new_id;
 
-  if p_host_plays then
+  if p_host_role = 'player' then
     insert into public.tournament_players (tournament_id, user_id) values (new_id, uid);
+  elsif p_host_role = 'dealer' then
+    update public.tournaments set dealer_id = uid where id = new_id;
   end if;
   return new_id;
 end;
@@ -340,6 +350,9 @@ begin
   select * into tr from public.tournaments where id = p_id for update;
   if not found then raise exception 'Tournament not found.'; end if;
   if tr.status <> 'open' then raise exception 'This tournament is no longer open.'; end if;
+  if tr.dealer_id = uid then
+    raise exception 'You''re dealing this table. Leave the dealer seat first if you want to play.';
+  end if;
   if exists (select 1 from public.tournament_players where tournament_id = p_id and user_id = uid) then
     return;
   end if;
@@ -466,9 +479,69 @@ begin
 end;
 $$;
 
+create or replace function public.take_dealer_seat(p_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $
+declare
+  uid uuid := public.assert_member();
+  tr public.tournaments%rowtype;
+begin
+  select * into tr from public.tournaments where id = p_id for update;
+  if not found then raise exception 'Tournament not found.'; end if;
+  if tr.status <> 'open' then raise exception 'This tournament is no longer open.'; end if;
+  if tr.dealer_id = uid then return; end if;
+  if tr.dealer_id is not null then raise exception 'This table already has a dealer.'; end if;
+  if exists (select 1 from public.tournament_players where tournament_id = p_id and user_id = uid) then
+    raise exception 'You''re playing at this table. Leave your seat first if you want to deal.';
+  end if;
+  update public.tournaments set dealer_id = uid where id = p_id;
+end;
+$;
+
+create or replace function public.leave_dealer_seat(p_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $
+declare
+  uid uuid := public.assert_member();
+  tr public.tournaments%rowtype;
+begin
+  select * into tr from public.tournaments where id = p_id for update;
+  if not found then raise exception 'Tournament not found.'; end if;
+  if tr.status <> 'open' then raise exception 'Results are already in; the dealer is locked.'; end if;
+  update public.tournaments set dealer_id = null where id = p_id and dealer_id = uid;
+end;
+$;
+
+create or replace function public.remove_dealer(p_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $
+declare
+  uid uuid := public.assert_member();
+  tr public.tournaments%rowtype;
+begin
+  select * into tr from public.tournaments where id = p_id for update;
+  if not found then raise exception 'Tournament not found.'; end if;
+  if tr.host_id <> uid then raise exception 'Only the host can remove the dealer.'; end if;
+  if tr.status <> 'open' then raise exception 'Results are already in. Reopen the tournament to change the dealer.'; end if;
+  update public.tournaments set dealer_id = null where id = p_id;
+end;
+$;
+
 -- Lock the functions down to signed-in members.
 revoke all on function public.assert_member() from public, anon;
-revoke all on function public.create_tournament(text, timestamptz, integer, boolean) from public, anon;
+revoke all on function public.create_tournament(text, timestamptz, integer, text) from public, anon;
+revoke all on function public.take_dealer_seat(uuid) from public, anon;
+revoke all on function public.leave_dealer_seat(uuid) from public, anon;
+revoke all on function public.remove_dealer(uuid) from public, anon;
 revoke all on function public.update_tournament(uuid, text, timestamptz, integer) from public, anon;
 revoke all on function public.delete_tournament(uuid) from public, anon;
 revoke all on function public.join_tournament(uuid) from public, anon;
@@ -477,7 +550,10 @@ revoke all on function public.remove_player(uuid, uuid) from public, anon;
 revoke all on function public.finalize_tournament(uuid, jsonb) from public, anon;
 revoke all on function public.reopen_tournament(uuid) from public, anon;
 
-grant execute on function public.create_tournament(text, timestamptz, integer, boolean) to authenticated;
+grant execute on function public.create_tournament(text, timestamptz, integer, text) to authenticated;
+grant execute on function public.take_dealer_seat(uuid) to authenticated;
+grant execute on function public.leave_dealer_seat(uuid) to authenticated;
+grant execute on function public.remove_dealer(uuid) to authenticated;
 grant execute on function public.update_tournament(uuid, text, timestamptz, integer) to authenticated;
 grant execute on function public.delete_tournament(uuid) to authenticated;
 grant execute on function public.join_tournament(uuid) to authenticated;
@@ -487,3 +563,6 @@ grant execute on function public.finalize_tournament(uuid, jsonb) to authenticat
 grant execute on function public.reopen_tournament(uuid) to authenticated;
 grant execute on function public.compute_average(integer, integer) to authenticated;
 grant execute on function public.rating_tier(numeric) to authenticated;
+
+-- Make the API pick up new columns and functions immediately.
+notify pgrst, 'reload schema';

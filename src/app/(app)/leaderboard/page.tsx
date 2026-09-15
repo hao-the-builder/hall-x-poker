@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { PODIUM_SUITS, Suit } from "@/components/Suit";
 import { TierMark } from "@/components/TierMark";
+import { Welcome } from "@/components/Welcome";
 import { getLeaderboard, getTournaments, getViewer } from "@/lib/data";
 import { fmtShort } from "@/lib/format";
 import { formatAverage } from "@/lib/rating";
@@ -19,6 +20,7 @@ export default async function LeaderboardPage() {
 
   return (
     <main className="page">
+      <Welcome />
       <div className="page-head">
         <div>
           <h1 className="page-title">Leaderboard</h1>

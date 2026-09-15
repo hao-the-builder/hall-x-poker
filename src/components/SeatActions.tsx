@@ -6,22 +6,25 @@ import { SubmitButton } from "@/components/SubmitButton";
 import {
   deleteTournament,
   joinTournament,
+  leaveDealerSeat,
   leaveTournament,
+  removeDealer,
   removePlayer,
+  takeDealerSeat,
   reopenTournament,
   type ActionState,
 } from "@/lib/actions";
 
 const initial: ActionState = {};
 
-export function JoinButton({ id, full }: { id: string; full: boolean }) {
+export function JoinButton({ id, full, dealing = false }: { id: string; full: boolean; dealing?: boolean }) {
   const [state, action] = useActionState(async () => joinTournament(id), initial);
   return (
     <form action={action} className="stack">
       {state.error && <Notice kind="danger">{state.error}</Notice>}
       <div>
-        <SubmitButton pendingLabel="Taking a seat…" disabled={full}>
-          {full ? "Table is full" : "Take a seat"}
+        <SubmitButton pendingLabel="Taking a seat…" disabled={full || dealing}>
+          {dealing ? "You’re dealing" : full ? "Table is full" : "Take a seat"}
         </SubmitButton>
       </div>
     </form>
@@ -38,6 +41,42 @@ export function LeaveButton({ id }: { id: string }) {
           Leave the table
         </SubmitButton>
       </div>
+    </form>
+  );
+}
+
+export function TakeDealerButton({ id }: { id: string }) {
+  const [state, action] = useActionState(async () => takeDealerSeat(id), initial);
+  return (
+    <form action={action} className="seat-action">
+      <SubmitButton variant="secondary" size="sm" pendingLabel="Taking it…">
+        Deal this table
+      </SubmitButton>
+      {state.error && <span className="seat-action__error" role="alert">{state.error}</span>}
+    </form>
+  );
+}
+
+export function LeaveDealerButton({ id }: { id: string }) {
+  const [state, action] = useActionState(async () => leaveDealerSeat(id), initial);
+  return (
+    <form action={action} className="seat-action">
+      <SubmitButton variant="quiet" size="sm" pendingLabel="Leaving…">
+        Stop dealing
+      </SubmitButton>
+      {state.error && <span className="seat-action__error" role="alert">{state.error}</span>}
+    </form>
+  );
+}
+
+export function RemoveDealerButton({ id, name }: { id: string; name: string }) {
+  const [state, action] = useActionState(async () => removeDealer(id), initial);
+  return (
+    <form action={action} className="seat-action">
+      <SubmitButton variant="quiet" size="sm" pendingLabel="Removing…" ariaLabel={`Remove ${name} as dealer`}>
+        Remove
+      </SubmitButton>
+      {state.error && <span className="seat-action__error" role="alert">{state.error}</span>}
     </form>
   );
 }

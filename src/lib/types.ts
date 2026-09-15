@@ -29,6 +29,7 @@ export type Tournament = {
   status: TournamentStatus;
   created_at: string;
   completed_at: string | null;
+  dealer_id: string | null;
 };
 
 export type Seat = {
@@ -44,10 +45,12 @@ export type TournamentSummary = Tournament & {
   host_name: string;
   seated: number;
   winner_name: string | null;
+  dealer_name: string | null;
 };
 
 export type TournamentDetail = Tournament & {
   host_name: string;
+  dealer_name: string | null;
   seats: Seat[];
 };
 

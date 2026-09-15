@@ -35,7 +35,8 @@ function List({ items, viewerId }: { items: TournamentSummary[]; viewerId?: stri
                 </>
               ) : (
                 <>
-                  {fmtDateTime(t.scheduled_at)} &middot; hosted by {t.host_name}
+                  {fmtDateTime(t.scheduled_at)} &middot; hosted by {t.host_name} &middot;{" "}
+                  {t.dealer_name ? <>dealt by {t.dealer_name}</> : <span className="tlist__needed">dealer needed</span>}
                 </>
               )}
             </span>

@@ -34,6 +34,7 @@ Leaderboard order: average, then more matches, then total points, then name. Com
 - No email verification: accounts are usable immediately (Supabase "Confirm email" is off).
 - Any signed-in member can create a tournament, join an open one (up to `max_players`, max 9), or leave before results are in.
 - Only the host can edit, delete, enter results for, or reopen their tournament.
+- Each tournament has one dealer seat, separate from the player seats. A member can deal or play a table, not both. Dealers are not ranked. The host can remove the dealer while the table is open.
 - Results must assign every seated player a unique position from 1 to N.
 - All writes go through `security definer` functions; tables are read-only to clients.
 

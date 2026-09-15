@@ -71,7 +71,7 @@ export const getTournaments = cache(async (): Promise<TournamentSummary[]> => {
   const { data, error } = await supabase
     .from("tournaments")
     .select(
-      "id, name, host_id, scheduled_at, max_players, status, created_at, completed_at, host:profiles!tournaments_host_id_fkey(display_name), tournament_players(rank, player:profiles(display_name))",
+      "id, name, host_id, dealer_id, scheduled_at, max_players, status, created_at, completed_at, host:profiles!tournaments_host_id_fkey(display_name), dealer:profiles!tournaments_dealer_id_fkey(display_name), tournament_players(rank, player:profiles!tournament_players_user_id_fkey(display_name))",
     )
     .order("scheduled_at", { ascending: false });
   if (error) throw new Error(error.message);
@@ -87,7 +87,9 @@ export const getTournaments = cache(async (): Promise<TournamentSummary[]> => {
       status: t.status,
       created_at: t.created_at,
       completed_at: t.completed_at,
+      dealer_id: t.dealer_id ?? null,
       host_name: t.host?.display_name ?? "Unknown",
+      dealer_name: t.dealer?.display_name ?? null,
       seated: seats.length,
       winner_name: winner?.player?.display_name ?? null,
     };
@@ -100,7 +102,7 @@ export const getTournament = cache(async (id: string): Promise<TournamentDetail 
   const { data, error } = await supabase
     .from("tournaments")
     .select(
-      "id, name, host_id, scheduled_at, max_players, status, created_at, completed_at, host:profiles!tournaments_host_id_fkey(display_name), tournament_players(tournament_id, user_id, joined_at, rank, points, player:profiles(display_name))",
+      "id, name, host_id, dealer_id, scheduled_at, max_players, status, created_at, completed_at, host:profiles!tournaments_host_id_fkey(display_name), dealer:profiles!tournaments_dealer_id_fkey(display_name), tournament_players(tournament_id, user_id, joined_at, rank, points, player:profiles!tournament_players_user_id_fkey(display_name))",
     )
     .eq("id", id)
     .maybeSingle();
@@ -129,7 +131,9 @@ export const getTournament = cache(async (id: string): Promise<TournamentDetail 
     status: t.status,
     created_at: t.created_at,
     completed_at: t.completed_at,
+    dealer_id: t.dealer_id ?? null,
     host_name: t.host?.display_name ?? "Unknown",
+    dealer_name: t.dealer?.display_name ?? null,
     seats,
   };
 });

@@ -23,7 +23,7 @@ export const metadata: Metadata = {
     default: SITE_NAME,
     template: `%s · ${SITE_NAME}`,
   },
-  description: "Tournament results and player ratings for the Hall X poker circle.",
+  description: "Tournament results and player ratings for the Hall X Student Poker Association.",
   robots: { index: false, follow: false },
 };
 

@@ -51,6 +51,7 @@ type DemoTournament = Tournament & { order: string[] };
 const TOURNAMENTS: DemoTournament[] = [
   {
     id: "t1",
+    dealer_id: "u12",
     name: "Welcome Week Table",
     host_id: "u1",
     scheduled_at: "2026-08-28T13:00:00Z",
@@ -62,6 +63,7 @@ const TOURNAMENTS: DemoTournament[] = [
   },
   {
     id: "t2",
+    dealer_id: "u9",
     name: "Friday Night, Common Room",
     host_id: "u3",
     scheduled_at: "2026-09-04T14:00:00Z",
@@ -73,6 +75,7 @@ const TOURNAMENTS: DemoTournament[] = [
   },
   {
     id: "t3",
+    dealer_id: "u4",
     name: "Post-Midterm Decompression",
     host_id: "u2",
     scheduled_at: "2026-09-06T12:00:00Z",
@@ -84,6 +87,7 @@ const TOURNAMENTS: DemoTournament[] = [
   },
   {
     id: "t4",
+    dealer_id: "u7",
     name: "Six-Max Sunday",
     host_id: "u5",
     scheduled_at: "2026-09-07T11:00:00Z",
@@ -95,6 +99,7 @@ const TOURNAMENTS: DemoTournament[] = [
   },
   {
     id: "t5",
+    dealer_id: null,
     name: "Floor 7 Invitational",
     host_id: "u8",
     scheduled_at: "2026-09-10T13:30:00Z",
@@ -106,6 +111,7 @@ const TOURNAMENTS: DemoTournament[] = [
   },
   {
     id: "t6",
+    dealer_id: "u1",
     name: "Heads-up Grudge Match",
     host_id: "u2",
     scheduled_at: "2026-09-12T15:00:00Z",
@@ -117,6 +123,7 @@ const TOURNAMENTS: DemoTournament[] = [
   },
   {
     id: "t7",
+    dealer_id: null,
     name: "Mid-September Table",
     host_id: "u1",
     scheduled_at: "2026-09-18T13:00:00Z",
@@ -128,6 +135,7 @@ const TOURNAMENTS: DemoTournament[] = [
   },
   {
     id: "t8",
+    dealer_id: "u5",
     name: "Six-Max Thursday",
     host_id: "u3",
     scheduled_at: "2026-09-17T14:00:00Z",
@@ -213,6 +221,7 @@ export function demoTournaments(): TournamentSummary[] {
     return {
       ...rest,
       host_name: profile(t.host_id).display_name,
+      dealer_name: t.dealer_id ? profile(t.dealer_id).display_name : null,
       seated: order.length,
       winner_name: t.status === "completed" ? profile(order[0]).display_name : null,
     };
@@ -224,7 +233,12 @@ export function demoTournament(id: string): TournamentDetail | null {
   if (!t) return null;
   const { order, ...rest } = t;
   void order;
-  return { ...rest, host_name: profile(t.host_id).display_name, seats: seatsOf(t) };
+  return {
+    ...rest,
+    host_name: profile(t.host_id).display_name,
+    dealer_name: t.dealer_id ? profile(t.dealer_id).display_name : null,
+    seats: seatsOf(t),
+  };
 }
 
 export function demoPlayer(id: string): { profile: Profile; results: PlayerResult[] } | null {

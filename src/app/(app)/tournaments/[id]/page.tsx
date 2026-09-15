@@ -2,7 +2,16 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { RankingForm } from "@/components/RankingForm";
-import { DeleteButton, JoinButton, LeaveButton, RemoveButton, ReopenButton } from "@/components/SeatActions";
+import {
+  DeleteButton,
+  JoinButton,
+  LeaveButton,
+  LeaveDealerButton,
+  RemoveButton,
+  RemoveDealerButton,
+  ReopenButton,
+  TakeDealerButton,
+} from "@/components/SeatActions";
 import { getTournament, getViewer } from "@/lib/data";
 import { fmtDateTime } from "@/lib/format";
 import { ordinal } from "@/lib/rating";
@@ -25,6 +34,7 @@ export default async function TournamentPage({ params }: { params: Params }) {
   const full = seated >= t.max_players;
   const mySeat = t.seats.find((s) => s.user_id === viewer?.id);
   const open = t.status === "open";
+  const isDealer = !!viewer && t.dealer_id === viewer.id;
 
   return (
     <main className="page">
@@ -81,6 +91,10 @@ export default async function TournamentPage({ params }: { params: Params }) {
           <dd>1st scores 9, {seated > 1 ? `${ordinal(seated)} scores ${10 - seated}` : "last scores 1"}</dd>
         </div>
         <div>
+          <dt>Dealer</dt>
+          <dd>{t.dealer_id ? <Link href={`/players/${t.dealer_id}`}>{t.dealer_name}</Link> : open ? "Needed" : "None"}</dd>
+        </div>
+        <div>
           <dt>Host</dt>
           <dd>
             <Link href={`/players/${t.host_id}`}>{t.host_name}</Link>
@@ -94,7 +108,28 @@ export default async function TournamentPage({ params }: { params: Params }) {
             {open ? "Who's in" : "Results"}
             <span className="count">{seated}</span>
           </h2>
-          {open && viewer && (mySeat ? <LeaveButton id={t.id} /> : <JoinButton id={t.id} full={full} />)}
+          {open && viewer && (mySeat ? <LeaveButton id={t.id} /> : <JoinButton id={t.id} full={full} dealing={isDealer} />)}
+        </div>
+
+        <div className={`seat seat--dealer${isDealer ? " is-me" : ""}${t.dealer_id ? "" : " seat--empty"}`}>
+          <span className={`dealer-button${t.dealer_id ? "" : " dealer-button--empty"}`} aria-hidden="true">
+            D
+          </span>
+          <span className="seat__who">
+            {t.dealer_id ? (
+              <Link href={`/players/${t.dealer_id}`} className="seat__name">
+                {t.dealer_name}
+              </Link>
+            ) : (
+              <span>{open ? "Dealer seat open" : "No dealer"}</span>
+            )}
+            <span className="seat__role">Dealer &middot; not ranked</span>
+          </span>
+          <span className="seat__meta">
+            {open && !t.dealer_id && viewer && !mySeat && <TakeDealerButton id={t.id} />}
+            {open && isDealer && <LeaveDealerButton id={t.id} />}
+            {open && isHost && t.dealer_id && !isDealer && <RemoveDealerButton id={t.id} name={t.dealer_name ?? "the dealer"} />}
+          </span>
         </div>
 
         <ol className="seats">
