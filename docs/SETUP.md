@@ -67,13 +67,15 @@ To preview the design with sample data and no database at all, set `NEXT_PUBLIC_
 
    | Name | Value |
    |---|---|
-   | `NEXT_PUBLIC_SUPABASE_URL` | your project URL |
-   | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | your anon public key |
-   | `NEXT_PUBLIC_SITE_URL` | your production URL, e.g. `https://hall-x-poker.vercel.app` |
+   | `SUPABASE_URL` | your project URL |
+   | `SUPABASE_ANON_KEY` | your anon public key |
+   | `SITE_URL` | your production URL, e.g. `https://hall-x-poker.vercel.app` |
+
+   Use these plain names. Vercel refuses to save `NEXT_PUBLIC_` names without extra steps, and the site copies the plain names into place when it builds. You can deploy first and add them afterwards, but you must **redeploy** after adding or changing them, because they are read at build time.
 
 4. Click **Deploy**. When it finishes, copy the production URL.
 5. Back in Supabase, set **Site URL** to that production URL.
-6. If you later add a custom domain, update `NEXT_PUBLIC_SITE_URL` and redeploy.
+6. If you later add a custom domain, update `SITE_URL` and redeploy.
 
 ## 7. Verify the deployment
 
