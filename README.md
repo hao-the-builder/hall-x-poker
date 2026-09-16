@@ -9,14 +9,15 @@ Tournament results and player ratings for the Hall X poker circle. Members sign 
 
 ## Scoring
 
-| Finish | Points |
-|---|---|
-| 1st | 9 |
-| 2nd | 8 |
-| ... | ... |
-| 9th | 1 |
+The winner scores one point per player who finished; each place below scores one less, down to 1 for last.
 
-Field size does not change the points: winning a 6-player table is still 9.
+| Finish | 9 players | 7 players |
+|---|---|---|
+| 1st | 9 | 7 |
+| 2nd | 8 | 6 |
+| Last | 1 | 1 |
+
+Beating more people is worth more, so a full table pays better than short-handed.
 
 ## Rating
 
@@ -35,7 +36,7 @@ Leaderboard order: average, then more matches, then total points, then name. Com
 - Any signed-in member can create a tournament, join an open one (up to `max_players`, max 9), or leave before results are in.
 - Only the host can edit, delete, enter results for, or reopen their tournament.
 - Each tournament has one dealer seat, separate from the player seats. A member can deal or play a table, not both. Dealers are not ranked. The host can remove the dealer while the table is open.
-- Results must assign every seated player a unique position from 1 to N.
+- Results must assign every seated player a unique position from 1 to N, and points are computed as N + 1 - position.
 - All writes go through `security definer` functions; tables are read-only to clients.
 
 ## Local development

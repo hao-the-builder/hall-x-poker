@@ -88,7 +88,7 @@ export default async function TournamentPage({ params }: { params: Params }) {
         </div>
         <div>
           <dt>Points</dt>
-          <dd>1st scores 9, {seated > 1 ? `${ordinal(seated)} scores ${10 - seated}` : "last scores 1"}</dd>
+          <dd>{seated > 1 ? `1st scores ${seated}, ${ordinal(seated)} scores 1` : "1 point per player in the field"}</dd>
         </div>
         <div>
           <dt>Dealer</dt>

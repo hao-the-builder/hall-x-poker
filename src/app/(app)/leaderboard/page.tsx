@@ -166,7 +166,7 @@ export default async function LeaderboardPage() {
             </table>
           </div>
           <p className="small muted" style={{ marginTop: "var(--s-4)" }}>
-            Ranked by average points per match (1st scores 9, 9th scores 1).
+            Ranked by average points per match. The winner scores one point per player in the field.
             {anyProvisional && (
               <>
                 {" "}

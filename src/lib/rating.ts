@@ -3,14 +3,14 @@
  * Mirrors `public.compute_average` and `public.rating_tier` in
  * supabase/schema.sql; the database is the source of truth.
  *
- *   Points: 1st = 9, 2nd = 8, ... 9th = 1, regardless of field size.
+ *   Points: the winner scores one point per player in the field, and each
+ *   place below scores one less. A 7-player table pays 7-6-5-4-3-2-1.
  *   avg = total_points / matches            (1.00 to 9.00)
  *   tier: S >= 7.5 | A >= 6.5 | B >= 5.5 | C >= 4.5 | D >= 3.5 | E below
  *   provisional: fewer than MIN_MATCHES completed matches
  */
 
 export const MAX_PLAYERS = 9;
-export const MAX_POINTS = 9;
 export const MIN_MATCHES = 3;
 
 export type Tier = "S" | "A" | "B" | "C" | "D" | "E";
@@ -24,8 +24,9 @@ export const TIERS: { tier: Tier; min: number; label: string }[] = [
   { tier: "E", min: 0, label: "Feeding the table. For now." },
 ];
 
-export function pointsForRank(rank: number): number {
-  return MAX_POINTS + 1 - rank;
+/** Points for a finishing position in a field of `fieldSize` players. */
+export function pointsForRank(rank: number, fieldSize: number): number {
+  return fieldSize + 1 - rank;
 }
 
 export function computeAverage(matches: number, totalPoints: number): number | null {

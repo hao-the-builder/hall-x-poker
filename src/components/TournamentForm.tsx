@@ -71,7 +71,7 @@ export function TournamentForm(props: Props) {
           <p className="field__hint">
             {props.mode === "edit" && props.initial.seated > 2
               ? `${props.initial.seated} already seated, so the table can't be smaller than that.`
-              : "Maximum 9, plus one dealer. First place scores 9 points whatever the field size."}
+              : "Maximum 9, plus one dealer. The winner scores one point per player who finishes."}
           </p>
         </div>
       </div>

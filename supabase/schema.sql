@@ -135,7 +135,8 @@ create index if not exists tournaments_status_idx on public.tournaments (status,
 -- ----------------------------------------------------------------------------
 -- 4. Rating: average points per match, and a letter tier
 --
---   Points: 1st = 9, 2nd = 8, ... 9th = 1, regardless of field size.
+--   Points: the winner scores one point per player in the field, and each
+--   place below scores one less. A 7-player table pays 7-6-5-4-3-2-1.
 --   avg_points = total_points / matches        (1.00 to 9.00)
 --   tier:  S >= 7.5 | A >= 6.5 | B >= 5.5 | C >= 4.5 | D >= 3.5 | E below
 --   provisional = fewer than 3 completed matches (tier shown, but flagged)
@@ -448,9 +449,10 @@ begin
     raise exception 'Rankings include someone who is not seated at this table.';
   end if;
 
+  -- Winner scores n_players; last place scores 1.
   update public.tournament_players tp
      set rank = r.rank,
-         points = 10 - r.rank
+         points = n_players + 1 - r.rank
     from jsonb_to_recordset(p_rankings) as r(user_id uuid, rank integer)
    where tp.tournament_id = p_id and tp.user_id = r.user_id;
 
@@ -563,6 +565,23 @@ grant execute on function public.finalize_tournament(uuid, jsonb) to authenticat
 grant execute on function public.reopen_tournament(uuid) to authenticated;
 grant execute on function public.compute_average(integer, integer) to authenticated;
 grant execute on function public.rating_tier(numeric) to authenticated;
+
+-- ----------------------------------------------------------------------------
+-- 8. Bring already-recorded results onto the field-size scale.
+--    Older results were scored 9 for first place whatever the field size.
+--    Idempotent: rows already on the new scale are left alone.
+-- ----------------------------------------------------------------------------
+with field as (
+  select tournament_id, count(*)::integer as n
+  from public.tournament_players
+  group by tournament_id
+)
+update public.tournament_players tp
+   set points = field.n + 1 - tp.rank
+  from field
+ where field.tournament_id = tp.tournament_id
+   and tp.rank is not null
+   and tp.points is distinct from field.n + 1 - tp.rank;
 
 -- Make the API pick up new columns and functions immediately.
 notify pgrst, 'reload schema';

@@ -159,7 +159,7 @@ function seatsOf(t: DemoTournament): Seat[] {
     user_id: uid,
     joined_at: t.created_at,
     rank: t.status === "completed" ? i + 1 : null,
-    points: t.status === "completed" ? 9 - i : null,
+    points: t.status === "completed" ? t.order.length - i : null,
     display_name: profile(uid).display_name,
   }));
 }
@@ -181,7 +181,7 @@ export function demoLeaderboard(): LeaderboardRow[] {
       const i = t.order.indexOf(p.id);
       if (i < 0) continue;
       matches += 1;
-      total += 9 - i;
+      total += t.order.length - i;
       if (i === 0) wins += 1;
       if (i < 3) podiums += 1;
       if (!last || (t.completed_at && t.completed_at > last)) last = t.completed_at;
@@ -252,7 +252,7 @@ export function demoPlayer(id: string): { profile: Profile; results: PlayerResul
         tournament_name: t.name,
         completed_at: t.completed_at,
         rank: i + 1,
-        points: 9 - i,
+        points: t.order.length - i,
         field_size: t.order.length,
       };
     })

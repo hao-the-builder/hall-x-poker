@@ -6,12 +6,12 @@ import { computeAverage, MIN_MATCHES, TIERS, tierFor } from "@/lib/rating";
 export const metadata: Metadata = { title: "How rating works" };
 
 const EXAMPLES: { label: string; matches: number; points: number }[] = [
-  { label: "One game, won it", matches: 1, points: 9 },
-  { label: "One game, came last", matches: 1, points: 1 },
-  { label: "Three games: 1st, 3rd, 2nd", matches: 3, points: 24 },
-  { label: "Five games, mid-table (5 pts each)", matches: 5, points: 25 },
-  { label: "Ten games, averaging 6", matches: 10, points: 60 },
-  { label: "Ten games, all wins", matches: 10, points: 90 },
+  { label: "Won a 9-player table", matches: 1, points: 9 },
+  { label: "Won a 6-player table", matches: 1, points: 6 },
+  { label: "Came last, any table", matches: 1, points: 1 },
+  { label: "Three 9-player tables: 1st, 3rd, 2nd", matches: 3, points: 24 },
+  { label: "Five 9-player tables, mid-table each time", matches: 5, points: 25 },
+  { label: "Ten 9-player tables, all wins", matches: 10, points: 90 },
 ];
 
 export default function RatingPage() {
@@ -27,9 +27,10 @@ export default function RatingPage() {
       <div className="prose">
         <h2>Points</h2>
         <p>
-          Every tournament seats up to nine players. First place scores <span className="kbd">9</span> points, second{" "}
-          <span className="kbd">8</span>, and so on down to <span className="kbd">1</span> for ninth. The field size
-          doesn&rsquo;t change this: winning a six-player table is still worth 9.
+          The winner scores one point for every player who finished, and each place below scores one less, down to{" "}
+          <span className="kbd">1</span> for last. Seven players means <span className="kbd">7</span> for first,{" "}
+          <span className="kbd">6</span> for second, and so on. A full nine-player table pays{" "}
+          <span className="kbd">9</span> at the top. Beating more people is worth more.
         </p>
 
         <h2>Average</h2>
@@ -42,8 +43,9 @@ export default function RatingPage() {
 
         <h2>Tiers</h2>
         <p>
-          The letter is just the average, bucketed. With nine seats, 5.00 is the exact middle of the table, so C is
-          &ldquo;average&rdquo; and everything above it means you finish in the top half more often than not.
+          The letter is just the average, bucketed. The thresholds are set for a full nine-player table, where 5.00 is
+          the exact middle, so C reads as &ldquo;average&rdquo;. Small tables pay fewer points for the same finish, so a
+          night of six-max poker will pull an average down even when you win.
         </p>
       </div>
 

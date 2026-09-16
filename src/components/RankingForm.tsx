@@ -30,8 +30,8 @@ export function RankingForm({ id, seats }: { id: string; seats: Seat[] }) {
   return (
     <form action={action} className="stack">
       <p className="muted small">
-        Pick each player&rsquo;s finishing position. 1st scores 9 points, 2nd scores 8, and so on down to {n}
-        {ordinal(n).slice(-2)} scoring {pointsForRank(n)}.
+        Pick each player&rsquo;s finishing position. With {n} {n === 1 ? "player" : "players"}, 1st scores {n}{" "}
+        {n === 1 ? "point" : "points"}, and each place below scores one less down to 1.
       </p>
       {state.error && <Notice kind="danger">{state.error}</Notice>}
       <ol className="rankform">
@@ -45,7 +45,7 @@ export function RankingForm({ id, seats }: { id: string; seats: Seat[] }) {
                   {s.display_name}
                 </label>
                 <div className="rankform__pts" aria-live="polite">
-                  {v ? `${ordinal(Number(v))} · ${pointsForRank(Number(v))} pts` : "Position not set"}
+                  {v ? `${ordinal(Number(v))} · ${pointsForRank(Number(v), n)} pts` : "Position not set"}
                   {dup && <span style={{ color: "var(--danger)" }}> · shared with another player</span>}
                 </div>
               </div>
