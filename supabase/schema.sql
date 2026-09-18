@@ -158,6 +158,14 @@ create index if not exists tournaments_status_idx on public.tournaments (status,
 --   provisional = fewer than 3 completed matches (tier shown, but flagged)
 --   Players with no completed matches are unrated (null).
 -- ----------------------------------------------------------------------------
+-- Older versions of this file defined these with different parameter names,
+-- and Postgres will not rename parameters in place. Drop the view that depends
+-- on them, then the functions, then rebuild all three.
+drop view if exists public.leaderboard;
+drop function if exists public.rating_tier(numeric);
+drop function if exists public.compute_rating(integer, integer);
+drop function if exists public.compute_average(integer, integer);
+
 create or replace function public.compute_rating(beaten integer, faced integer)
 returns numeric
 language sql
@@ -199,10 +207,6 @@ $$;
 -- ----------------------------------------------------------------------------
 -- 5. Leaderboard view
 -- ----------------------------------------------------------------------------
--- Dropped first: the column list changed, and Postgres will not replace a view
--- whose columns differ.
-drop view if exists public.leaderboard;
-
 create or replace view public.leaderboard
 with (security_invoker = true)
 as
