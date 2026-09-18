@@ -14,7 +14,7 @@ import {
 } from "@/components/SeatActions";
 import { getTournament, getViewer } from "@/lib/data";
 import { fmtDateTime } from "@/lib/format";
-import { ordinal } from "@/lib/rating";
+import { MIN_PLAYERS, ordinal } from "@/lib/rating";
 
 type Params = Promise<{ id: string }>;
 
@@ -178,28 +178,33 @@ export default async function TournamentPage({ params }: { params: Params }) {
         )}
       </section>
 
-      {isHost && open && (
+      {viewer && open && (
         <section className="section" aria-labelledby="results-h">
           <div className="section-head">
             <h2 id="results-h" className="section-title">
               Enter results
             </h2>
           </div>
-          {seated < 2 ? (
-            <p className="muted">At least two players need to be seated before results can be entered.</p>
+          {seated < MIN_PLAYERS ? (
+            <p className="muted">
+              A match needs at least {MIN_PLAYERS} players. {seated} seated so far.
+            </p>
           ) : (
             <RankingForm id={t.id} seats={t.seats} />
           )}
         </section>
       )}
 
-      {isHost && !open && (
+      {viewer && !open && (
         <section className="section" aria-labelledby="fix-h">
           <div className="section-head">
             <h2 id="fix-h" className="section-title">
-              Made a mistake?
+              Wrong order?
             </h2>
           </div>
+          <p className="muted small" style={{ marginBottom: "var(--s-4)" }}>
+            Any member can reopen a completed tournament and enter the finishing order again.
+          </p>
           <ReopenButton id={t.id} />
         </section>
       )}

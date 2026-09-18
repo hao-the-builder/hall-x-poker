@@ -5,6 +5,7 @@ import { useActionState } from "react";
 import { Notice } from "@/components/Notice";
 import { SubmitButton } from "@/components/SubmitButton";
 import { createTournament, updateTournament, type ActionState } from "@/lib/actions";
+import { MAX_PLAYERS, MIN_PLAYERS } from "@/lib/rating";
 
 type Props =
   | { mode: "create"; defaultWhen: string }
@@ -23,7 +24,7 @@ export function TournamentForm(props: Props) {
   const name = f?.name ?? (props.mode === "edit" ? props.initial.name : "");
   const when = f?.scheduled_at ?? (props.mode === "edit" ? props.initial.scheduled_at_local : props.defaultWhen);
   const max = Number(f?.max_players ?? (props.mode === "edit" ? props.initial.max_players : 9));
-  const minSeats = props.mode === "edit" ? Math.max(2, props.initial.seated) : 2;
+  const minSeats = props.mode === "edit" ? Math.max(MIN_PLAYERS, props.initial.seated) : MIN_PLAYERS;
 
   return (
     <form action={formAction} className="form" noValidate>
@@ -60,7 +61,7 @@ export function TournamentForm(props: Props) {
             Seats
           </label>
           <select id="max_players" name="max_players" className="select" defaultValue={String(max)}>
-            {Array.from({ length: 8 }, (_, i) => i + 2)
+            {Array.from({ length: MAX_PLAYERS - MIN_PLAYERS + 1 }, (_, i) => i + MIN_PLAYERS)
               .filter((n) => n >= minSeats)
               .map((n) => (
                 <option key={n} value={n}>
@@ -69,9 +70,9 @@ export function TournamentForm(props: Props) {
               ))}
           </select>
           <p className="field__hint">
-            {props.mode === "edit" && props.initial.seated > 2
+            {props.mode === "edit" && props.initial.seated > MIN_PLAYERS
               ? `${props.initial.seated} already seated, so the table can't be smaller than that.`
-              : "Maximum 9, plus one dealer. The winner scores one point per player who finishes."}
+              : `${MIN_PLAYERS} to ${MAX_PLAYERS} players, plus one dealer. A match needs ${MIN_PLAYERS} to be recorded.`}
           </p>
         </div>
       </div>

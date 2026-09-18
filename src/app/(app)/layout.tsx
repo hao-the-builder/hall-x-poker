@@ -16,7 +16,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <footer className="footer">
         <div className="footer__inner">
           <span>Hall X Poker</span>
-          <span>The winner scores one point per player in the field. Rating is average points per match.</span>
+          <span>Rating is the share of opponents you finish ahead of. Matches need at least 5 players.</span>
           {isDemo() && <span>Preview mode: sample data, changes disabled.</span>}
         </div>
       </footer>

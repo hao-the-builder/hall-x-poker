@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { TierMark } from "@/components/TierMark";
 import { getLeaderboard, getPlayer, getViewer } from "@/lib/data";
 import { fmtShort } from "@/lib/format";
-import { formatAverage, MIN_MATCHES, ordinal } from "@/lib/rating";
+import { formatRating, MIN_MATCHES, ordinal } from "@/lib/rating";
 
 type Params = Promise<{ id: string }>;
 
@@ -19,7 +19,7 @@ export default async function PlayerPage({ params }: { params: Params }) {
   const [viewer, player, board] = await Promise.all([getViewer(), getPlayer(id), getLeaderboard()]);
   if (!player) notFound();
   const { profile, stats, position, results } = player;
-  const ratedCount = board.filter((r) => r.avg_points !== null).length;
+  const ratedCount = board.filter((r) => r.rating !== null).length;
   const isMe = viewer?.id === profile.id;
 
   return (
@@ -50,10 +50,17 @@ export default async function PlayerPage({ params }: { params: Params }) {
           </dd>
         </div>
         <div>
-          <dt>Average points</dt>
+          <dt>Rating</dt>
           <dd className="rating-big">
-            {formatAverage(stats.avg_points)}
-            {stats.avg_points !== null && <small>/ 9</small>}
+            {formatRating(stats.rating)}
+            {stats.rating !== null && <small>/ 100</small>}
+          </dd>
+        </div>
+        <div>
+          <dt>Opponents beaten</dt>
+          <dd>
+            {stats.beaten}
+            <small>of {stats.faced}</small>
           </dd>
         </div>
         <div>

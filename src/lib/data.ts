@@ -58,6 +58,9 @@ export const getLeaderboard = cache(async (): Promise<LeaderboardRow[]> => {
     wins: Number(r.wins ?? 0),
     podiums: Number(r.podiums ?? 0),
     last_played_at: r.last_played_at ?? null,
+    beaten: Number(r.beaten ?? 0),
+    faced: Number(r.faced ?? 0),
+    rating: r.rating === null || r.rating === undefined ? null : Number(r.rating),
     avg_points: r.avg_points === null || r.avg_points === undefined ? null : Number(r.avg_points),
     tier: r.tier ?? null,
     provisional: Boolean(r.provisional),
@@ -146,7 +149,7 @@ export const getPlayer = cache(
     const idx = board.findIndex((r) => r.id === id);
     if (idx < 0) return null;
     const stats = board[idx];
-    const position = stats.avg_points === null ? null : idx + 1;
+    const position = stats.rating === null ? null : idx + 1;
 
     if (isDemo()) {
       const d = demoPlayer(id);

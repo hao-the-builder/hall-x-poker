@@ -15,6 +15,9 @@ export type LeaderboardRow = {
   wins: number;
   podiums: number;
   last_played_at: string | null;
+  beaten: number;
+  faced: number;
+  rating: number | null;
   avg_points: number | null;
   tier: "S" | "A" | "B" | "C" | "D" | "E" | null;
   provisional: boolean;

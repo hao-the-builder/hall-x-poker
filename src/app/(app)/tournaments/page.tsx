@@ -63,7 +63,7 @@ export default async function TournamentsPage() {
       <div className="page-head">
         <div>
           <h1 className="page-title">Tournaments</h1>
-          <p className="lede">Join an open table, or set one up. Up to nine seats plus a dealer; the winner scores one point per player.</p>
+          <p className="lede">Join an open table, or set one up. Five to nine seats plus a dealer. Any member can enter the results.</p>
         </div>
         <Link href="/tournaments/new" className="btn btn--primary">
           New tournament

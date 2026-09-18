@@ -12,7 +12,7 @@ Two roles, one account type: any signed-in member can host a tournament (create 
 
 ## Product Purpose
 
-A rating system for hall poker. It replaces a spreadsheet nobody trusts with a shared, verified record: who played, where they finished, how many points that earned, an average-points rating, and a letter tier from S to E. Success is that the leaderboard is the thing people screenshot into the group chat, and that nobody disputes how the number was produced because the site explains it.
+A rating system for hall poker. It replaces a spreadsheet nobody trusts with a shared, verified record: who played, where they finished, how many points that earned, a rating built from the share of opponents beaten, and a letter tier from S to E. Success is that the leaderboard is the thing people screenshot into the group chat, and that nobody disputes how the number was produced because the site explains it.
 
 Non-goals: no chips, buy-ins, money, or hand tracking. No real-time play. No public marketing page; this is a members-only tool.
 

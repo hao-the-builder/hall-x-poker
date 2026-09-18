@@ -3,7 +3,7 @@
  * database, so the UI can be reviewed before Supabase is connected. Writes are
  * disabled in this mode.
  */
-import { computeAverage, isProvisional, tierFor } from "./rating";
+import { computeRating, isProvisional, opponentsBeaten, opponentsFaced, tierFor } from "./rating";
 import type {
   LeaderboardRow,
   PlayerResult,
@@ -112,14 +112,14 @@ const TOURNAMENTS: DemoTournament[] = [
   {
     id: "t6",
     dealer_id: "u1",
-    name: "Heads-up Grudge Match",
+    name: "Five-Handed Grudge Match",
     host_id: "u2",
     scheduled_at: "2026-09-12T15:00:00Z",
-    max_players: 2,
+    max_players: 5,
     status: "completed",
     created_at: "2026-09-11T10:00:00Z",
     completed_at: "2026-09-12T15:40:00Z",
-    order: ["u3", "u2"],
+    order: ["u3", "u2", "u7", "u10", "u4"],
   },
   {
     id: "t7",
@@ -173,6 +173,8 @@ export function demoLeaderboard(): LeaderboardRow[] {
   const rows = PROFILES.map((p) => {
     let matches = 0;
     let total = 0;
+    let beaten = 0;
+    let faced = 0;
     let wins = 0;
     let podiums = 0;
     let last: string | null = null;
@@ -180,8 +182,11 @@ export function demoLeaderboard(): LeaderboardRow[] {
       if (t.status !== "completed") continue;
       const i = t.order.indexOf(p.id);
       if (i < 0) continue;
+      const n = t.order.length;
       matches += 1;
-      total += t.order.length - i;
+      total += n - i;
+      beaten += opponentsBeaten(i + 1, n);
+      faced += opponentsFaced(n);
       if (i === 0) wins += 1;
       if (i < 3) podiums += 1;
       if (!last || (t.completed_at && t.completed_at > last)) last = t.completed_at;
@@ -194,8 +199,11 @@ export function demoLeaderboard(): LeaderboardRow[] {
       wins,
       podiums,
       last_played_at: last,
-      avg_points: computeAverage(matches, total),
-      tier: tierFor(computeAverage(matches, total)),
+      beaten,
+      faced,
+      rating: computeRating(beaten, faced),
+      tier: tierFor(computeRating(beaten, faced)),
+      avg_points: matches ? Math.round((total / matches) * 100) / 100 : null,
       provisional: isProvisional(matches),
     } satisfies LeaderboardRow;
   });
@@ -203,13 +211,13 @@ export function demoLeaderboard(): LeaderboardRow[] {
 }
 
 export function sortLeaderboard(rows: LeaderboardRow[]): LeaderboardRow[] {
-  // Average points per match, then more matches (a proven average beats a
-  // short one), then total points, then name. Unrated players go last.
+  // Rating, then more opponents faced (a proven record beats a short one),
+  // then total points, then name. Unrated players go last.
   return [...rows].sort((a, b) => {
-    const aa = a.avg_points ?? -1;
-    const ba = b.avg_points ?? -1;
-    if (ba !== aa) return ba - aa;
-    if (b.matches !== a.matches) return b.matches - a.matches;
+    const ar = a.rating ?? -1;
+    const br = b.rating ?? -1;
+    if (br !== ar) return br - ar;
+    if (b.faced !== a.faced) return b.faced - a.faced;
     if (b.total_points !== a.total_points) return b.total_points - a.total_points;
     return a.display_name.localeCompare(b.display_name);
   });

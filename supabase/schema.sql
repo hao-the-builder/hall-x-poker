@@ -109,7 +109,7 @@ create table if not exists public.tournaments (
   created_at timestamptz not null default now(),
   completed_at timestamptz,
   constraint tournaments_name_length check (char_length(name) between 2 and 60),
-  constraint tournaments_max_players_range check (max_players between 2 and 9)
+  constraint tournaments_max_players_range check (max_players between 5 and 9)
 );
 
 create table if not exists public.tournament_players (
@@ -126,6 +126,13 @@ create table if not exists public.tournament_players (
 
 create index if not exists tournament_players_user_idx on public.tournament_players (user_id);
 
+-- Tables seat 5 to 9. Widen any older table that was created smaller, then
+-- make sure the constraint matches (it may predate this rule).
+update public.tournaments set max_players = 5 where max_players < 5;
+alter table public.tournaments drop constraint if exists tournaments_max_players_range;
+alter table public.tournaments
+  add constraint tournaments_max_players_range check (max_players between 5 and 9);
+
 -- One dealer per table. The dealer does not play, is not ranked, and does not
 -- take one of the (up to 9) player seats.
 alter table public.tournaments
@@ -133,15 +140,51 @@ alter table public.tournaments
 create index if not exists tournaments_status_idx on public.tournaments (status, scheduled_at desc);
 
 -- ----------------------------------------------------------------------------
--- 4. Rating: average points per match, and a letter tier
+-- 4. Rating: share of opponents beaten
 --
---   Points: the winner scores one point per player in the field, and each
---   place below scores one less. A 7-player table pays 7-6-5-4-3-2-1.
---   avg_points = total_points / matches        (1.00 to 9.00)
---   tier:  S >= 7.5 | A >= 6.5 | B >= 5.5 | C >= 4.5 | D >= 3.5 | E below
+--   Points (per tournament): the winner scores one point per player in the
+--   field, each place below one less. A 7-player table pays 7-6-5-4-3-2-1.
+--
+--   For one result in a field of n, finishing in position r:
+--     opponents faced  = n - 1
+--     opponents beaten = n - r
+--
+--   rating = 100 * (total beaten + 4) / (total faced + 8)
+--
+--   The +4 / +8 is one imaginary full table finished mid: it keeps a single
+--   night from producing a perfect score and fades as real games pile up.
+--   Big fields carry more weight because they contribute more opponents.
+--   tier: S >= 80 | A >= 68 | B >= 56 | C >= 44 | D >= 32 | E below
 --   provisional = fewer than 3 completed matches (tier shown, but flagged)
 --   Players with no completed matches are unrated (null).
 -- ----------------------------------------------------------------------------
+create or replace function public.compute_rating(beaten integer, faced integer)
+returns numeric
+language sql
+immutable
+as $$
+  select case
+    when faced is null or faced <= 0 then null
+    else round(100 * (beaten + 4)::numeric / (faced + 8), 1)
+  end
+$$;
+
+create or replace function public.rating_tier(rating numeric)
+returns text
+language sql
+immutable
+as $$
+  select case
+    when rating is null then null
+    when rating >= 80 then 'S'
+    when rating >= 68 then 'A'
+    when rating >= 56 then 'B'
+    when rating >= 44 then 'C'
+    when rating >= 32 then 'D'
+    else 'E'
+  end
+$$;
+
 create or replace function public.compute_average(matches integer, total_points integer)
 returns numeric
 language sql
@@ -153,46 +196,43 @@ as $$
   end
 $$;
 
-create or replace function public.rating_tier(avg_points numeric)
-returns text
-language sql
-immutable
-as $$
-  select case
-    when avg_points is null then null
-    when avg_points >= 7.5 then 'S'
-    when avg_points >= 6.5 then 'A'
-    when avg_points >= 5.5 then 'B'
-    when avg_points >= 4.5 then 'C'
-    when avg_points >= 3.5 then 'D'
-    else 'E'
-  end
-$$;
-
 -- ----------------------------------------------------------------------------
 -- 5. Leaderboard view
 -- ----------------------------------------------------------------------------
+-- Dropped first: the column list changed, and Postgres will not replace a view
+-- whose columns differ.
+drop view if exists public.leaderboard;
+
 create or replace view public.leaderboard
 with (security_invoker = true)
 as
-with stats as (
+with field as (
+  select tournament_id, count(*)::integer as n
+  from public.tournament_players
+  group by tournament_id
+),
+stats as (
   select
     p.id,
     p.display_name,
     count(tp.tournament_id) filter (where t.status = 'completed')::integer as matches,
     coalesce(sum(tp.points) filter (where t.status = 'completed'), 0)::integer as total_points,
+    coalesce(sum(f.n - tp.rank) filter (where t.status = 'completed'), 0)::integer as beaten,
+    coalesce(sum(f.n - 1) filter (where t.status = 'completed'), 0)::integer as faced,
     count(*) filter (where t.status = 'completed' and tp.rank = 1)::integer as wins,
     count(*) filter (where t.status = 'completed' and tp.rank <= 3)::integer as podiums,
     max(t.completed_at) filter (where t.status = 'completed') as last_played_at
   from public.profiles p
   left join public.tournament_players tp on tp.user_id = p.id
   left join public.tournaments t on t.id = tp.tournament_id
+  left join field f on f.tournament_id = tp.tournament_id
   group by p.id, p.display_name
 )
 select
   s.*,
+  public.compute_rating(s.beaten, s.faced) as rating,
+  public.rating_tier(public.compute_rating(s.beaten, s.faced)) as tier,
   public.compute_average(s.matches, s.total_points) as avg_points,
-  public.rating_tier(public.compute_average(s.matches, s.total_points)) as tier,
   (s.matches < 3) as provisional
 from stats s;
 
@@ -265,8 +305,8 @@ begin
   if p_name is null or char_length(trim(p_name)) < 2 then
     raise exception 'Give the tournament a name (2 to 60 characters).';
   end if;
-  if p_max_players is null or p_max_players < 2 or p_max_players > 9 then
-    raise exception 'A table seats between 2 and 9 players.';
+  if p_max_players is null or p_max_players < 5 or p_max_players > 9 then
+    raise exception 'A table seats between 5 and 9 players.';
   end if;
   insert into public.tournaments (name, host_id, scheduled_at, max_players)
   values (left(trim(p_name), 60), uid, coalesce(p_scheduled_at, now()), p_max_players)
@@ -304,8 +344,8 @@ begin
   if p_name is null or char_length(trim(p_name)) < 2 then
     raise exception 'Give the tournament a name (2 to 60 characters).';
   end if;
-  if p_max_players is null or p_max_players < 2 or p_max_players > 9 then
-    raise exception 'A table seats between 2 and 9 players.';
+  if p_max_players is null or p_max_players < 5 or p_max_players > 9 then
+    raise exception 'A table seats between 5 and 9 players.';
   end if;
   select count(*) into seated from public.tournament_players where tournament_id = p_id;
   if p_max_players < seated then
@@ -420,15 +460,15 @@ declare
 begin
   select * into tr from public.tournaments where id = p_id for update;
   if not found then raise exception 'Tournament not found.'; end if;
-  if tr.host_id <> uid then raise exception 'Only the host can enter results.'; end if;
+  -- Any member can record results, not just the host.
   if tr.status <> 'open' then raise exception 'Results have already been entered.'; end if;
   if p_rankings is null or jsonb_typeof(p_rankings) <> 'array' then
     raise exception 'Rankings must be a list.';
   end if;
 
   select count(*) into n_players from public.tournament_players where tournament_id = p_id;
-  if n_players < 2 then
-    raise exception 'At least 2 players must be seated to record results.';
+  if n_players < 5 then
+    raise exception 'A match needs at least 5 players. % seated.', n_players;
   end if;
 
   select count(*), count(distinct r.user_id), count(distinct r.rank), min(r.rank), max(r.rank)
@@ -474,7 +514,7 @@ declare
 begin
   select * into tr from public.tournaments where id = p_id for update;
   if not found then raise exception 'Tournament not found.'; end if;
-  if tr.host_id <> uid then raise exception 'Only the host can reopen this tournament.'; end if;
+  -- Any member can reopen a tournament to correct its results.
   if tr.status <> 'completed' then return; end if;
   update public.tournament_players set rank = null, points = null where tournament_id = p_id;
   update public.tournaments set status = 'open', completed_at = null where id = p_id;
@@ -564,6 +604,7 @@ grant execute on function public.remove_player(uuid, uuid) to authenticated;
 grant execute on function public.finalize_tournament(uuid, jsonb) to authenticated;
 grant execute on function public.reopen_tournament(uuid) to authenticated;
 grant execute on function public.compute_average(integer, integer) to authenticated;
+grant execute on function public.compute_rating(integer, integer) to authenticated;
 grant execute on function public.rating_tier(numeric) to authenticated;
 
 -- ----------------------------------------------------------------------------

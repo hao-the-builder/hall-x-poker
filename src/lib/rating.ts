@@ -1,26 +1,35 @@
 /**
- * Rating: average points per match, plus a letter tier.
- * Mirrors `public.compute_average` and `public.rating_tier` in
+ * Rating: share of opponents beaten.
+ * Mirrors `public.compute_rating` and `public.rating_tier` in
  * supabase/schema.sql; the database is the source of truth.
  *
- *   Points: the winner scores one point per player in the field, and each
- *   place below scores one less. A 7-player table pays 7-6-5-4-3-2-1.
- *   avg = total_points / matches            (1.00 to 9.00)
- *   tier: S >= 7.5 | A >= 6.5 | B >= 5.5 | C >= 4.5 | D >= 3.5 | E below
- *   provisional: fewer than MIN_MATCHES completed matches
+ *   For one result in a field of n, finishing in position r:
+ *     opponents faced  = n - 1
+ *     opponents beaten = n - r
+ *
+ *   rating = 100 * (total beaten + 4) / (total faced + 8)
+ *
+ * The +4 / +8 is one imaginary full table finished mid: it stops a single
+ * night producing a perfect score, and fades as real games pile up. Larger
+ * fields carry more weight because they contribute more opponents.
  */
 
+/** Table size limits. A match needs at least MIN_PLAYERS to be recorded. */
+export const MIN_PLAYERS = 5;
 export const MAX_PLAYERS = 9;
+
+export const PRIOR_BEATEN = 4;
+export const PRIOR_FACED = 8;
 export const MIN_MATCHES = 3;
 
 export type Tier = "S" | "A" | "B" | "C" | "D" | "E";
 
 export const TIERS: { tier: Tier; min: number; label: string }[] = [
-  { tier: "S", min: 7.5, label: "Shark. Averages a top-two finish." },
-  { tier: "A", min: 6.5, label: "Regularly in the money." },
-  { tier: "B", min: 5.5, label: "Above the middle of the table." },
-  { tier: "C", min: 4.5, label: "Mid-table. Wins some, loses some." },
-  { tier: "D", min: 3.5, label: "Below the middle. Still building." },
+  { tier: "S", min: 80, label: "Beats four of every five opponents." },
+  { tier: "A", min: 68, label: "Regularly near the top of the table." },
+  { tier: "B", min: 56, label: "Finishes above the middle." },
+  { tier: "C", min: 44, label: "Mid-table. Wins some, loses some." },
+  { tier: "D", min: 32, label: "Below the middle. Still building." },
   { tier: "E", min: 0, label: "Feeding the table. For now." },
 ];
 
@@ -29,15 +38,24 @@ export function pointsForRank(rank: number, fieldSize: number): number {
   return fieldSize + 1 - rank;
 }
 
-export function computeAverage(matches: number, totalPoints: number): number | null {
-  if (matches <= 0) return null;
-  return Math.round((totalPoints / matches) * 100) / 100;
+export function opponentsFaced(fieldSize: number): number {
+  return fieldSize - 1;
 }
 
-export function tierFor(avg: number | null): Tier | null {
-  if (avg === null) return null;
+export function opponentsBeaten(rank: number, fieldSize: number): number {
+  return fieldSize - rank;
+}
+
+export function computeRating(beaten: number, faced: number): number | null {
+  if (faced <= 0) return null;
+  const raw = (100 * (beaten + PRIOR_BEATEN)) / (faced + PRIOR_FACED);
+  return Math.round(raw * 10) / 10;
+}
+
+export function tierFor(rating: number | null): Tier | null {
+  if (rating === null) return null;
   for (const t of TIERS) {
-    if (avg >= t.min) return t.tier;
+    if (rating >= t.min) return t.tier;
   }
   return "E";
 }
@@ -46,8 +64,13 @@ export function isProvisional(matches: number): boolean {
   return matches < MIN_MATCHES;
 }
 
+export function formatRating(rating: number | null | undefined): string {
+  if (rating === null || rating === undefined) return "\u2014";
+  return rating.toFixed(1);
+}
+
 export function formatAverage(avg: number | null | undefined): string {
-  if (avg === null || avg === undefined) return "—";
+  if (avg === null || avg === undefined) return "\u2014";
   return avg.toFixed(2);
 }
 

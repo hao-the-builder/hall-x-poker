@@ -5,14 +5,14 @@ import { TierMark } from "@/components/TierMark";
 import { Welcome } from "@/components/Welcome";
 import { getLeaderboard, getTournaments, getViewer } from "@/lib/data";
 import { fmtShort } from "@/lib/format";
-import { formatAverage } from "@/lib/rating";
+import { formatRating } from "@/lib/rating";
 
 export const metadata: Metadata = { title: "Leaderboard" };
 
 export default async function LeaderboardPage() {
   const [viewer, board, tournaments] = await Promise.all([getViewer(), getLeaderboard(), getTournaments()]);
-  const rated = board.filter((r) => r.avg_points !== null);
-  const unrated = board.filter((r) => r.avg_points === null);
+  const rated = board.filter((r) => r.rating !== null);
+  const unrated = board.filter((r) => r.rating === null);
   const completed = tournaments.filter((t) => t.status === "completed").length;
   const open = tournaments.filter((t) => t.status === "open").length;
   const podium = rated.slice(0, 3);
@@ -73,14 +73,14 @@ export default async function LeaderboardPage() {
                       <p className="index-card__rating">
                         <TierMark tier={p.tier} provisional={p.provisional} size="lg" />
                         <span className="index-card__avg">
-                          {formatAverage(p.avg_points)}
-                          <small>avg</small>
+                          {formatRating(p.rating)}
+                          <small>/ 100</small>
                         </span>
                       </p>
                     </div>
                     <p className="index-card__stats">
-                      {p.matches} {p.matches === 1 ? "match" : "matches"} &middot; {p.total_points} pts &middot; {p.wins}{" "}
-                      {p.wins === 1 ? "win" : "wins"}
+                      Beat {p.beaten} of {p.faced} &middot; {p.matches} {p.matches === 1 ? "match" : "matches"} &middot;{" "}
+                      {p.wins} {p.wins === 1 ? "win" : "wins"}
                     </p>
                   </div>
                   <div className="index-card__mirror" aria-hidden="true">
@@ -104,12 +104,18 @@ export default async function LeaderboardPage() {
                     Tier
                   </th>
                   <th scope="col" className="num">
-                    Avg
+                    Rating
                   </th>
                   <th scope="col" className="num">
+                    Beaten
+                  </th>
+                  <th scope="col" className="num">
+                    Faced
+                  </th>
+                  <th scope="col" className="num hide-sm">
                     Matches
                   </th>
-                  <th scope="col" className="num">
+                  <th scope="col" className="num hide-sm">
                     Points
                   </th>
                   <th scope="col" className="num hide-sm">
@@ -132,13 +138,15 @@ export default async function LeaderboardPage() {
                       <TierMark tier={r.tier} provisional={r.provisional} />
                     </td>
                     <td className="num">
-                      <span className="rating">{formatAverage(r.avg_points)}</span>{" "}
+                      <span className="rating">{formatRating(r.rating)}</span>{" "}
                       <span className="meter hide-sm" aria-hidden="true">
-                        <span className="meter__fill" style={{ width: `${(((r.avg_points ?? 1) - 1) / 8) * 100}%` }} />
+                        <span className="meter__fill" style={{ width: `${r.rating ?? 0}%` }} />
                       </span>
                     </td>
-                    <td className="num">{r.matches}</td>
-                    <td className="num">{r.total_points}</td>
+                    <td className="num">{r.beaten}</td>
+                    <td className="num">{r.faced}</td>
+                    <td className="num hide-sm">{r.matches}</td>
+                    <td className="num hide-sm">{r.total_points}</td>
                     <td className="num hide-sm">{r.wins}</td>
                     <td className="hide-sm muted small">{fmtShort(r.last_played_at)}</td>
                   </tr>
@@ -159,6 +167,7 @@ export default async function LeaderboardPage() {
                     <td className="num muted">0</td>
                     <td className="num muted">0</td>
                     <td className="num hide-sm muted">0</td>
+                    <td className="num hide-sm muted">0</td>
                     <td className="hide-sm muted small">&ndash;</td>
                   </tr>
                 ))}
@@ -166,7 +175,8 @@ export default async function LeaderboardPage() {
             </table>
           </div>
           <p className="small muted" style={{ marginTop: "var(--s-4)" }}>
-            Ranked by average points per match. The winner scores one point per player in the field.
+            Rating is the share of opponents you finish ahead of, so a win counts at any table size and bigger
+            fields count for more.
             {anyProvisional && (
               <>
                 {" "}
