@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { TierMark } from "@/components/TierMark";
 import { getLeaderboard, getPlayer, getViewer } from "@/lib/data";
 import { fmtShort } from "@/lib/format";
-import { formatRating, MIN_MATCHES, ordinal } from "@/lib/rating";
+import { formatRating, isRanked, MIN_MATCHES, ordinal } from "@/lib/rating";
 
 type Params = Promise<{ id: string }>;
 
@@ -19,7 +19,8 @@ export default async function PlayerPage({ params }: { params: Params }) {
   const [viewer, player, board] = await Promise.all([getViewer(), getPlayer(id), getLeaderboard()]);
   if (!player) notFound();
   const { profile, stats, position, results } = player;
-  const ratedCount = board.filter((r) => r.rating !== null).length;
+  const rankedCount = board.filter((r) => isRanked(r.matches)).length;
+  const ranked = isRanked(stats.matches);
   const isMe = viewer?.id === profile.id;
 
   return (
@@ -28,7 +29,7 @@ export default async function PlayerPage({ params }: { params: Params }) {
         <div>
           <p className="small muted" style={{ marginBottom: "var(--s-2)" }}>
             <Link href="/leaderboard">Leaderboard</Link> /{" "}
-            {position ? `${ordinal(position)} of ${ratedCount}` : "Unrated"}
+            {ranked && position ? `${ordinal(position)} of ${rankedCount}` : "Not yet ranked"}
           </p>
           <h1 className="page-title">
             {profile.display_name}
@@ -64,25 +65,27 @@ export default async function PlayerPage({ params }: { params: Params }) {
           </dd>
         </div>
         <div>
-          <dt>Matches</dt>
+          <dt>Games played</dt>
           <dd>{stats.matches}</dd>
         </div>
         <div>
-          <dt>Total points</dt>
-          <dd>{stats.total_points}</dd>
-        </div>
-        <div>
-          <dt>Wins</dt>
+          <dt>Games won</dt>
           <dd>{stats.wins}</dd>
         </div>
         <div>
           <dt>Top three</dt>
           <dd>{stats.podiums}</dd>
         </div>
+        <div>
+          <dt>Total points</dt>
+          <dd>{stats.total_points}</dd>
+        </div>
       </dl>
-      {stats.provisional && stats.tier && (
+      {!ranked && (
         <p className="small muted" style={{ marginTop: "var(--s-3)" }}>
-          Provisional: the tier settles after {MIN_MATCHES} matches ({MIN_MATCHES - stats.matches} to go).
+          {stats.matches === 0
+            ? `No matches yet. ${MIN_MATCHES} are needed for a place in the ranking.`
+            : `Not yet ranked: ${MIN_MATCHES - stats.matches} more ${MIN_MATCHES - stats.matches === 1 ? "match" : "matches"} for a place in the ranking.`}
         </p>
       )}
 

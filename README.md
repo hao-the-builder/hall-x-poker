@@ -25,13 +25,13 @@ For one result in a field of `n` players, finishing in position `r`: you faced `
 
 ```
 rating = 100 * (total beaten + 4) / (total faced + 8)
-tier:  S >= 80 | A >= 68 | B >= 56 | C >= 44 | D >= 32 | E below
+tier:  S >= 65 | A >= 60 | B >= 55 | C >= 50 | D >= 45 | E below
 provisional: fewer than 3 completed matches (dashed tier mark)
 ```
 
 A win counts as a clean sweep at any table size, so small tables never drag a player down, while bigger fields carry more weight because they contribute more opponents. The `+4 / +8` is one imaginary full table finished mid, which stops a single night producing a perfect score and fades as games accumulate.
 
-Leaderboard order: rating, then more opponents faced, then total points, then name. Computed in Postgres (`compute_rating`, `rating_tier`, `leaderboard` view) and mirrored in `src/lib/rating.ts`. The `/rating` page in the app explains it to players.
+The leaderboard has two sections: players with 3 or more matches are ranked and numbered; everyone else is listed below with the same stats and rating but no position. Order within each: rating, then more opponents faced, then total points, then name. Computed in Postgres (`compute_rating`, `rating_tier`, `leaderboard` view) and mirrored in `src/lib/rating.ts`. The `/rating` page in the app explains it to players.
 
 ## Rules enforced in the database
 

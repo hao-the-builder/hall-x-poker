@@ -25,11 +25,11 @@ export const MIN_MATCHES = 3;
 export type Tier = "S" | "A" | "B" | "C" | "D" | "E";
 
 export const TIERS: { tier: Tier; min: number; label: string }[] = [
-  { tier: "S", min: 80, label: "Beats four of every five opponents." },
-  { tier: "A", min: 68, label: "Regularly near the top of the table." },
-  { tier: "B", min: 56, label: "Finishes above the middle." },
-  { tier: "C", min: 44, label: "Mid-table. Wins some, loses some." },
-  { tier: "D", min: 32, label: "Below the middle. Still building." },
+  { tier: "S", min: 65, label: "Beats roughly two of every three opponents." },
+  { tier: "A", min: 60, label: "Regularly near the top of the table." },
+  { tier: "B", min: 55, label: "Finishes above the middle." },
+  { tier: "C", min: 50, label: "Mid-table. Wins some, loses some." },
+  { tier: "D", min: 45, label: "Just below the middle." },
   { tier: "E", min: 0, label: "Feeding the table. For now." },
 ];
 
@@ -60,8 +60,14 @@ export function tierFor(rating: number | null): Tier | null {
   return "E";
 }
 
+/** Fewer than MIN_MATCHES completed matches: rated, but not given a position. */
 export function isProvisional(matches: number): boolean {
   return matches < MIN_MATCHES;
+}
+
+/** A player joins the ranking once they have MIN_MATCHES completed matches. */
+export function isRanked(matches: number): boolean {
+  return matches >= MIN_MATCHES;
 }
 
 export function formatRating(rating: number | null | undefined): string {

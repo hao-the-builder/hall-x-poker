@@ -154,8 +154,9 @@ create index if not exists tournaments_status_idx on public.tournaments (status,
 --   The +4 / +8 is one imaginary full table finished mid: it keeps a single
 --   night from producing a perfect score and fades as real games pile up.
 --   Big fields carry more weight because they contribute more opponents.
---   tier: S >= 80 | A >= 68 | B >= 56 | C >= 44 | D >= 32 | E below
---   provisional = fewer than 3 completed matches (tier shown, but flagged)
+--   tier: S >= 65 | A >= 60 | B >= 55 | C >= 50 | D >= 45 | E below
+--   provisional = fewer than 3 completed matches: rated and tiered, but
+--   listed below the ranking rather than given a position.
 --   Players with no completed matches are unrated (null).
 -- ----------------------------------------------------------------------------
 -- Older versions of this file defined these with different parameter names,
@@ -184,11 +185,11 @@ immutable
 as $$
   select case
     when rating is null then null
-    when rating >= 80 then 'S'
-    when rating >= 68 then 'A'
-    when rating >= 56 then 'B'
-    when rating >= 44 then 'C'
-    when rating >= 32 then 'D'
+    when rating >= 65 then 'S'
+    when rating >= 60 then 'A'
+    when rating >= 55 then 'B'
+    when rating >= 50 then 'C'
+    when rating >= 45 then 'D'
     else 'E'
   end
 $$;

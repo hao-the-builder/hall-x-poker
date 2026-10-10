@@ -62,6 +62,13 @@ export default function RatingPage() {
           about who showed up than who played well.
         </p>
 
+        <h2>Who gets a ranking</h2>
+        <p>
+          The leaderboard has two parts. Players with {MIN_MATCHES} or more matches are ranked and take a numbered
+          position. Everyone else is listed below with the same stats and the same rating, but no position, because two
+          nights is not enough to place somebody. The ranking is joined automatically on the {MIN_MATCHES}rd match.
+        </p>
+
         <h2>Tiers</h2>
         <p>
           The letter is the rating, bucketed. 50 is exactly average, meaning you finish ahead of half the people you sit
@@ -97,8 +104,8 @@ export default function RatingPage() {
       <div className="prose" style={{ marginTop: "var(--s-8)" }}>
         <h2>Provisional ratings</h2>
         <p>
-          Until a player has completed {MIN_MATCHES} matches their tier is drawn with a dashed border. Nothing else
-          changes: they still sort by rating, and the flag clears itself.
+          Until a player has completed {MIN_MATCHES} matches their tier is drawn with a dashed border and they sit in
+          the unranked section. Their rating is real and visible; it simply does not earn a position yet.
         </p>
 
         <h2>Worked examples</h2>

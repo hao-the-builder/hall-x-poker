@@ -782,6 +782,15 @@ textarea {
   text-decoration: underline;
 }
 
+.table--muted tbody td {
+  color: var(--ink-2);
+}
+
+.table--muted tbody td a,
+.table--muted tbody .rating {
+  color: var(--ink);
+}
+
 .table--animate tbody tr {
   animation: rise 240ms var(--ease) both;
   animation-delay: calc(min(var(--i, 0), 12) * 20ms);
